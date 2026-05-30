@@ -1,7 +1,10 @@
 import runpod
 import torch
+import requests
+import asyncio
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from vllm import LLM, SamplingParams
+from app.database import hadith_collection
 
 print("🚀 Initializing Enterprise Multilingual Models on GPU...")
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -71,10 +74,28 @@ def handler(job):
         
         return {"generated_text": generated_text}
 
+    # --- TASK 4: REMOTE SEEDING (NEW) ---
+    elif task == "seed":
+        json_url = job_input.get("json_url")
+        if not json_url:
+            return {"error": "Missing 'json_url' in seed payload"}
+        
+        # Fetch data
+        data = requests.get(json_url).json()
+        texts = [doc.get("text_english", "") for doc in data]
+        
+        # Batch Embed on GPU
+        embeddings = bi_encoder.encode(texts, batch_size=32, normalize_embeddings=True)
+        
+        for i, doc in enumerate(data):
+            doc["embedding"] = [float(x) for x in embeddings[i].tolist()]
+            
+        # Perform DB insertion (Using asyncio.run to interface with async DB driver)
+        asyncio.run(hadith_collection.insert_many(data, ordered=False))
+        return {"status": "success", "inserted": len(data)}
+
     else:
         return {"error": f"Unknown task: '{task}'"}
 
 if __name__ == "__main__":
     runpod.serverless.start({"handler": handler})
-
-    
