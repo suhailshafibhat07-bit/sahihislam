@@ -21,4 +21,7 @@ ARG HF_TOKEN
 RUN python3 -c "import os; from huggingface_hub import snapshot_download; \
 snapshot_download(repo_id='casperhansen/deepseek-r1-distill-qwen-14b-awq', token=os.environ.get('HF_TOKEN'))"
 
-CMD [ "python3", "-u", "/handler.py" ]
+# --- THE FIX ---
+# Override the vLLM default entrypoint so it doesn't force the server to start
+ENTRYPOINT ["python3"]
+CMD ["-u", "/handler.py"]
