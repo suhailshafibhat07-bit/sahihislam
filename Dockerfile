@@ -14,14 +14,12 @@ RUN python3 -c "from sentence_transformers import SentenceTransformer, CrossEnco
 SentenceTransformer('BAAI/bge-m3'); \
 CrossEncoder('BAAI/bge-reranker-v2-m3')"
 
-# Pre-download the AWQ Quantized DeepSeek-R1 Model
+# Give the container your Hugging Face credentials
+ARG HF_TOKEN
+ENV HF_TOKEN=$HF_TOKEN
+
+# Pre-download the AWQ Quantized DeepSeek-R1 Model (Typo fixed!)
 RUN python3 -c "from huggingface_hub import snapshot_download; \
-snapshot_download(repo_id='hugging-quants/DeepSeek-R1-Distill-Qwen-14B-AWQ-META')"
+snapshot_download(repo_id='hugging-quants/DeepSeek-R1-Distill-Qwen-14B-AWQ')"
 
 CMD [ "python3", "-u", "/handler.py" ]
-
-
-
-
-
-# Force update
